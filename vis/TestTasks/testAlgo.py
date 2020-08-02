@@ -13,4 +13,7 @@ class TestAlgo(TaskPerceiver):
 
 		return frame, [cv.cvtColor(frame, cv.COLOR_BGR2GRAY), \
 			cv.Canny(frame, slider_vals['canny_low'], slider_vals['canny_high']), \
-			cv.Canny(frame, slider_vals['canny_low'], slider_vals['canny_high'])]
+			cv.Canny(frame, slider_vals['canny_low'], slider_vals['canny_high']), \
+			cv.Canny(frame, slider_vals['canny_low'], slider_vals['canny_high']), \
+			cv.cvtColor(frame, cv.COLOR_BGR2GRAY)]
+			#cv.cvtColor(frame, cv.COLOR_BGR2GRAY)]
