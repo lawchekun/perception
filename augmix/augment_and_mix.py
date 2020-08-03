@@ -22,7 +22,8 @@ import cv2
 # CIFAR-10 constants
 MEAN = [0.4914, 0.4822, 0.4465]
 STD = [0.2023, 0.1994, 0.2010]
-
+imglst = []
+size = 0
 
 def normalize(image):
   """Normalize input image channel-wise to zero mean and unit variance."""
@@ -33,9 +34,14 @@ def normalize(image):
 
 
 def apply_op(image, op, severity):
+  global size
+  global imglst
   image = np.clip(image * 255., 0, 255).astype(np.uint8)
   pil_img = Image.fromarray(image)  # Convert to PIL.Image
   pil_img = op(pil_img, severity)
+  imglst.append(('apply_op', np.asarray(pil_img)))
+  print(size, 'apply_op')
+  size += 1
   return np.asarray(pil_img) / 255.
 
 
@@ -53,25 +59,25 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
   Returns:
     mixed: Augmented and mixed image.
   """
+  global size
+  global imglst
   ws = np.float32(
       np.random.dirichlet([alpha] * width))
   m = np.float32(np.random.beta(alpha, alpha))
-  imglst = []
-  size = 0
   mix = np.zeros_like(image)
-  imglst.append(mix)
+  imglst.append(('start', mix))
   print(size, 'start')
   size += 1
   for i in range(width):
     image_aug = image.copy()
-    imglst.append(image_aug)
+    imglst.append(('copy', image_aug))
     print(size, 'copy')
     size += 1
     depth = depth if depth > 0 else np.random.randint(1, 4)
     for _ in range(3):
       op = np.random.choice(augmentations.augmentations)
       image_aug = apply_op(image_aug, op, severity)
-      imglst.append(image_aug)
+      imglst.append(('augment', image_aug))
       print(size, 'augment')
       size += 1
     # Preprocessing commutes since all coefficients are convex
@@ -79,7 +85,7 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
     print(mix.shape, A.shape)
     print('image shape: ', image.shape)
     np.add(mix, A, out=mix, casting='unsafe')
-    imglst.append(mix)
+    imglst.append(('mix', mix))
     print(size, 'mix')
     size += 1
 
@@ -88,16 +94,20 @@ def augment_and_mix(image, severity=3, width=3, depth=-1, alpha=1.):
 
 if __name__ == '__main__':
   npimage = cv2.imread(args[1], 1)
-  # image = Image.new("RGB", image.size, (255, 255, 255))
-  # npimage = np.asarray(image)[...,:3]
-  # print(type(image))
-  # print('hihi')
-  image_out, imglist = augment_and_mix(npimage)
-  print(len(imglist))
-  for imagg in imglist:
-    cv2.imshow('augmix img', imagg)#np.hstack((image_out, npimage)))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-  cv2.imshow('augmix img', image_out)#np.hstack((image_out, npimage)))
+  # npimage = npimage.astype('float32')
+  """
+  cv2.imshow('first', npimage)#np.hstack((image_out, npimage)))
   cv2.waitKey(0)
   cv2.destroyAllWindows()
+  image_out, imglist = augment_and_mix(npimage, severity=1)
+  print(len(imglist))
+  for imagg in imglist:
+    cv2.imshow(imagg[0], imagg[1])#np.hstack((image_out, npimage)))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    """
+  # newim = apply_op(npimage, augmentations.augmentations[0], 2)
+  newim = np.asarray(augmentations.augmentations[5](Image.fromarray(npimage), 23))
+  cv2.imshow('augmix img', newim)
+  cv2.waitKey(0)
+  # cv2.destroyAllWindows()
